@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Boo Server — Minecraft Bedrock Survival</title>
+<meta name="description" content="Join our dedicated Minecraft Bedrock survival server in one tap, or add it manually on any platform." />
+<meta name="theme-color" content="#1c1815" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%231c1815'/%3E%3Crect x='2' y='2' width='4' height='4' fill='%23e8a33d'/%3E%3Crect x='10' y='2' width='4' height='4' fill='%23f7bb56'/%3E%3Crect x='6' y='6' width='4' height='4' fill='%23f7bb56'/%3E%3Crect x='2' y='10' width='4' height='4' fill='%23f7bb56'/%3E%3Crect x='10' y='10' width='4' height='4' fill='%23e8a33d'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet" />
+<style>
+  /* ---------- Tokens ---------- */
+  :root {
+    --bg: #1c1815;
+    --bg-elevated: #262019;
+    --bg-inset: #100d0b;
+    --bevel-light: #4a3f34;
+    --bevel-dark: #0a0806;
+    --border: #382f27;
+    --text: #f2ece1;
+    --text-muted: #ab9f8f;
+    --text-faint: #6f6557;
+    --accent: #e8a33d;
+    --accent-strong: #f7bb56;
+    --accent-ink: #241505;
+    --online: #6fcf6f;
+    --offline: #e2574c;
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Manrope', sans-serif;
+    --font-pixel: 'Press Start 2P', monospace;
+    --shell: 1180px;
+  }
+
+  /* ---------- Reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body, h1, h2, h3, p, ol, ul, figure { margin: 0; }
+  ol, ul { padding: 0; list-style: none; }
+  img, svg { display: block; max-width: 100%; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 700; line-height: 1.15; }
+
+  .shell { max-width: var(--shell); margin: 0 auto; padding: 0 1.5rem; }
+
+  .skip-link {
+    position: absolute; left: -9999px; top: 0;
+    background: var(--accent); color: var(--accent-ink);
+    padding: 0.75rem 1.25rem; font-weight: 700; z-index: 100;
+  }
+  .skip-link:focus { left: 1rem; top: 1rem; }
+
+  :focus-visible {
+    outline: 3px solid var(--accent-strong);
+    outline-offset: 2px;
+  }
+
+  /* ---------- Bevel material (inventory-slot look) ---------- */
+  .bevel-raised, .bevel-inset {
+    border-style: solid;
+    border-width: 3px;
+  }
+  .bevel-raised {
+    background: var(--bg-elevated);
+    border-top-color: var(--bevel-light);
+    border-left-color: var(--bevel-light);
+    border-bottom-color: var(--bevel-dark);
+    border-right-color: var(--bevel-dark);
+  }
+  .bevel-inset {
+    background: var(--bg-inset);
+    border-top-color: var(--bevel-dark);
+    border-left-color: var(--bevel-dark);
+    border-bottom-color: var(--bevel-light);
+    border-right-color: var(--bevel-light);
+  }
+
+  /* ---------- Pixel mosaic icon ---------- */
+  .pixel-icon {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border: 3px solid var(--bg-inset);
+  }
+  .pixel-icon--sm { width: 26px; height: 26px; border-width: 2px; }
+  .pixel-icon span:nth-child(1), .pixel-icon span:nth-child(4),
+  .pixel-icon span:nth-child(6), .pixel-icon span:nth-child(7),
+  .pixel-icon span:nth-child(10), .pixel-icon span:nth-child(11),
+  .pixel-icon span:nth-child(13), .pixel-icon span:nth-child(16) {
+    background: var(--accent);
+  }
+  .pixel-icon span:nth-child(2), .pixel-icon span:nth-child(3),
+  .pixel-icon span:nth-child(5), .pixel-icon span:nth-child(8),
+  .pixel-icon span:nth-child(9), .pixel-icon span:nth-child(12),
+  .pixel-icon span:nth-child(14), .pixel-icon span:nth-child(15) {
+    background: var(--accent-strong);
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn-primary, .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: var(--font-body);
+    font-weight: 700;
+    white-space: nowrap;
+    border-style: solid;
+    border-width: 3px;
+    padding: 0.9rem 1.75rem;
+    font-size: 1rem;
+    transition: transform 0.12s ease, background-color 0.12s ease;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-top-color: var(--accent-strong);
+    border-left-color: var(--accent-strong);
+    border-bottom-color: #8a5a10;
+    border-right-color: #8a5a10;
+  }
+  .btn-primary:hover { background: var(--accent-strong); }
+  .btn-primary:active { transform: translate(2px, 2px); }
+  .btn-secondary {
+    background: var(--bg-elevated);
+    color: var(--text);
+    border-top-color: var(--bevel-light);
+    border-left-color: var(--bevel-light);
+    border-bottom-color: var(--bevel-dark);
+    border-right-color: var(--bevel-dark);
+  }
+  .btn-secondary:hover { background: #2c2620; }
+  .btn-secondary:active { transform: translate(2px, 2px); }
+  .btn-compact { padding: 0.55rem 1.1rem; font-size: 0.9rem; }
+  .btn-large { padding: 1.15rem 2.25rem; font-size: 1.1rem; }
+  .btn-pulse { animation: pulse-glow 2.6s ease-in-out infinite; }
+  .btn-copy {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--accent);
+    padding: 0.4rem 0.8rem;
+    border: 2px solid var(--border);
+  }
+  .btn-copy:hover { border-color: var(--accent); }
+  .btn-copy:active { transform: translate(1px, 1px); }
+
+  /* ---------- Header ---------- */
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(28, 24, 21, 0.92);
+    border-bottom: 1px solid var(--border);
+  }
+  .site-header__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+  .wordmark { display: flex; align-items: center; gap: 0.65rem; }
+  .wordmark__text {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.01em;
+  }
+  .site-nav { display: flex; gap: 1.75rem; }
+  .site-nav a {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+  .site-nav a:hover { color: var(--text); }
+
+  /* ---------- Hero ---------- */
+  .hero { position: relative; overflow: hidden; padding-top: 3.5rem; background: radial-gradient(circle at 75% 30%, rgba(232,163,61,.10), transparent 28%), linear-gradient(120deg, rgba(255,255,255,.015), transparent 45%); }
+  .hero::before, .hero::after { content: ""; position: absolute; inset: -30%; pointer-events: none; opacity: .28; background-image: radial-gradient(circle, var(--accent) 1px, transparent 1.5px); background-size: 54px 54px; animation: drift 24s linear infinite; }
+  .hero::after { background-size: 91px 91px; opacity: .12; animation-duration: 38s; animation-direction: reverse; }
+  @keyframes drift { from { transform: translate3d(0,0,0) rotate(0deg); } to { transform: translate3d(54px,54px,0) rotate(3deg); } }
+
+  .hero__terrain {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 140px;
+    background: #171310;
+    clip-path: polygon(
+      0% 100%, 0% 70%, 6% 70%, 6% 55%, 12% 55%, 12% 65%, 18% 65%, 18% 40%,
+      24% 40%, 24% 50%, 30% 50%, 30% 35%, 36% 35%, 36% 45%, 42% 45%, 42% 60%,
+      48% 60%, 48% 40%, 54% 40%, 54% 55%, 60% 55%, 60% 30%, 66% 30%, 66% 45%,
+      72% 45%, 72% 60%, 78% 60%, 78% 50%, 84% 50%, 84% 65%, 90% 65%, 90% 55%,
+      96% 55%, 96% 70%, 100% 70%, 100% 100%
+    );
+    opacity: 0.7;
+    pointer-events: none;
+  }
+  .hero__inner { z-index: 1;
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 3rem;
+    align-items: center;
+    padding-bottom: 6rem;
+    min-height: 480px;
+  }
+  .hero__copy {
+    animation: fade-up 0.7s ease both;
+  }
+  .hero h1 {
+    font-size: clamp(2.1rem, 4.6vw, 3.4rem);
+    max-width: 11ch;
+  }
+  .hero__subtext {
+    margin-top: 0.9rem;
+    font-size: 1.15rem;
+    color: var(--text-muted);
+    max-width: 42ch;
+  }
+  .hero__actions {
+    margin-top: 2rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+  }
+  .hero__hint {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+  }
+  .hero__hint:hover { color: var(--accent); border-color: var(--accent); }
+  .join-fallback {
+    margin-top: 1.1rem;
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    max-width: 42ch;
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+    transition: opacity 0.3s ease;
+  }
+  .join-fallback.is-visible { opacity: 1; height: auto; }
+
+  .hero__card {
+    animation: fade-up 0.7s ease 0.15s both;
+  }
+  .server-card { padding: 1.4rem; }
+  .server-card__top { display: flex; align-items: center; gap: 1rem; }
+  .server-card__meta { flex: 1; min-width: 0; }
+  .server-card__name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.15rem;
+  }
+  .server-card__address {
+    margin-top: 0.4rem;
+    font-family: var(--font-pixel);
+    font-size: 0.62rem;
+    line-height: 1.6;
+    color: var(--accent-strong);
+    word-break: break-all;
+  }
+  .signal-bars { display: flex; align-items: flex-end; gap: 3px; height: 20px; flex-shrink: 0; }
+  .signal-bars span { display: block; width: 4px; background: var(--accent); }
+  .signal-bars span:nth-child(1) { height: 6px; }
+  .signal-bars span:nth-child(2) { height: 11px; }
+  .signal-bars span:nth-child(3) { height: 16px; }
+  .signal-bars span:nth-child(4) { height: 20px; }
+  .server-card__status {
+    margin-top: 1.25rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+  }
+  .status-dot {
+    width: 10px; height: 10px; flex-shrink: 0;
+    background: var(--text-faint);
+  }
+  .status-dot.is-online { background: var(--online); animation: dot-pulse 1.8s ease-in-out infinite; }
+  .status-dot.is-offline { background: var(--offline); }
+
+  /* ---------- Section shell ---------- */
+  .section { padding: 5rem 0; border-top: 1px solid var(--border); }
+  .section--alt { background: var(--bg-elevated); }
+  .section h2 { font-size: clamp(1.5rem, 2.6vw, 2.1rem); }
+  .section__lede {
+    margin-top: 0.75rem;
+    color: var(--text-muted);
+    max-width: 56ch;
+  }
+
+  /* ---------- Steps ---------- */
+  .steps {
+    margin-top: 2.5rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+  }
+  .step { padding: 1.5rem 1.25rem; }
+  .step__number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.1rem; height: 2.1rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--accent-ink);
+    background: var(--accent);
+  }
+  .step h3 { margin-top: 1rem; font-size: 1.05rem; }
+  .step p { margin-top: 0.5rem; font-size: 0.92rem; color: var(--text-muted); }
+
+  /* ---------- Manual setup ---------- */
+  .connection-grid {
+    margin-top: 2.25rem;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.25rem;
+  }
+  .slot-field { padding: 1.1rem 1.25rem; position: relative; }
+  .slot-field__label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-faint);
+  }
+  .slot-field__value {
+    display: block;
+    margin-top: 0.35rem;
+    margin-right: 5rem;
+    font-family: var(--font-pixel);
+    font-size: 0.72rem;
+    line-height: 1.7;
+    color: var(--text);
+    word-break: break-all;
+  }
+  .slot-field .btn-copy { position: absolute; right: 1.1rem; top: 50%; transform: translateY(-50%); }
+  .slot-field .copy-feedback {
+    position: absolute; right: 1.1rem; bottom: 0.5rem;
+    font-size: 0.72rem; color: var(--accent);
+    opacity: 0; transition: opacity 0.2s ease;
+  }
+  .copy-feedback.is-visible { opacity: 1; }
+
+  .manual-steps { margin-top: 2rem; max-width: 60ch; }
+  .manual-steps li {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.95rem;
+    color: var(--text-muted);
+  }
+  .manual-steps li:last-child { border-bottom: none; }
+  .manual-steps strong { color: var(--text); }
+
+  .section__foot { margin-top: 1.75rem; }
+  .section__foot a { font-size: 0.9rem; font-weight: 600; color: var(--accent); border-bottom: 1px solid transparent; }
+  .section__foot a:hover { border-color: var(--accent); }
+
+  .manual-actions { margin-top: 1.75rem; }
+
+  /* ---------- Hotbar / features ---------- */
+  .hotbar {
+    margin-top: 2.5rem;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+  .hotbar__slot { padding: 1.5rem; }
+  .hotbar__slot h3 { font-size: 1.05rem; }
+  .hotbar__slot p { margin-top: 0.6rem; font-size: 0.92rem; color: var(--text-muted); }
+
+  /* ---------- Footer ---------- */
+  .site-footer { border-top: 1px solid var(--border); padding: 2.5rem 0; }
+  .site-footer__address {
+    font-family: var(--font-pixel);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+  .site-footer__legal {
+    margin-top: 0.9rem;
+    font-size: 0.8rem;
+    color: var(--text-faint);
+    max-width: 65ch;
+    line-height: 1.6;
+  }
+
+  /* ---------- Animations ---------- */
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(232, 163, 61, 0.35); }
+    50% { box-shadow: 0 0 0 10px rgba(232, 163, 61, 0); }
+  }
+  @keyframes dot-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+  }
+
+
+  .ambient-particles { position:absolute; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
+  .ambient-particles i { position:absolute; width:6px; height:6px; background:var(--accent-strong); opacity:.35; animation: float-pixel 7s ease-in-out infinite; }
+  .ambient-particles i:nth-child(1){left:12%;top:28%;animation-delay:-1s}.ambient-particles i:nth-child(2){left:28%;top:65%;animation-delay:-4s}.ambient-particles i:nth-child(3){left:55%;top:20%;animation-delay:-2s}.ambient-particles i:nth-child(4){left:78%;top:58%;animation-delay:-5s}.ambient-particles i:nth-child(5){left:91%;top:31%;animation-delay:-3s}.ambient-particles i:nth-child(6){left:68%;top:78%;animation-delay:-6s}
+  @keyframes float-pixel { 0%,100% { transform:translateY(18px); opacity:.12; } 50% { transform:translateY(-24px); opacity:.5; } }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 860px) {
+    .hero__inner { z-index: 1; grid-template-columns: 1fr; min-height: 0; padding-top: 1rem; }
+    .hero__card { order: 2; }
+    .hero__copy { order: 1; }
+    .hero h1 { max-width: none; }
+    .steps { grid-template-columns: 1fr 1fr; }
+    .hotbar { grid-template-columns: 1fr; }
+    .connection-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .site-nav { display: none; }
+    .steps { grid-template-columns: 1fr; }
+    .section { padding: 3.5rem 0; }
+    .slot-field__value { margin-right: 0; margin-bottom: 2.5rem; }
+    .slot-field .btn-copy { top: auto; bottom: 1rem; transform: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="shell site-header__inner">
+      <a class="wordmark" href="#top">
+        <span class="pixel-icon pixel-icon--sm" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+        </span>
+        <span class="wordmark__text">Boo Server</span>
+      </a>
+      <nav class="site-nav" aria-label="Primary">
+        <a href="#how-to-join">How to Join</a>
+        <a href="#manual-setup">Manual Setup</a>
+      </nav>
+      <button class="btn-primary btn-compact" data-action="join">Join Server</button>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top"><div class="ambient-particles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="hero__terrain" aria-hidden="true"></div>
+      <div class="shell hero__inner">
+        <div class="hero__copy">
+          <h1>Your World Awaits</h1>
+          <p class="hero__subtext">Minecraft Server for Survival Experience</p>
+          <div class="hero__actions">
+            <button class="btn-primary btn-large btn-pulse" data-action="join">Join Server</button>
+            <a class="hero__hint" href="#manual-setup">or add it manually</a>
+          </div>
+          <p id="joinFallback" class="join-fallback" role="status" aria-live="polite">
+            Still here? Minecraft may not be installed, or your browser blocked the request — copy the address below and add it manually.
+          </p>
+        </div>
+
+        <div class="hero__card">
+          <div class="server-card bevel-raised">
+            <div class="server-card__top">
+              <span class="pixel-icon" aria-hidden="true">
+                <span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span>
+              </span>
+              <div class="server-card__meta">
+                <p class="server-card__name">Boo Server</p>
+                <p class="server-card__address">tissues-shorty.tun.ply.gg:34816</p>
+              </div>
+              <span class="signal-bars" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+            </div>
+            <div class="server-card__status">
+              <span class="status-dot" id="statusDot" aria-hidden="true"></span>
+              <span id="statusText">Checking server status…</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="how-to-join">
+      <div class="shell">
+        <h2>How to Join</h2>
+        <ol class="steps">
+          <li class="step bevel-raised">
+            <span class="step__number">1</span>
+            <h3>Tap Join Server</h3>
+            <p>Use the button above. Your device will try to open Minecraft automatically.</p>
+          </li>
+          <li class="step bevel-raised">
+            <span class="step__number">2</span>
+            <h3>Add &amp; connect</h3>
+            <p>Minecraft opens and adds our server — tap it in your list, then hit Play.</p>
+          </li>
+          <li class="step bevel-raised">
+            <span class="step__number">3</span>
+            <h3>On console or no luck?</h3>
+            <p>Use the manual address below — it works on every platform, every time.</p>
+          </li>
+          <li class="step bevel-raised">
+            <span class="step__number">4</span>
+            <h3>Jump in</h3>
+            <p>You're in the world. Grab some wood, build shelter, and enjoy the survival.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section section--alt" id="manual-setup">
+      <div class="shell">
+        <h2>Manual Setup</h2>
+        <p class="section__lede">Works on every platform, including consoles. Copy the details below and add them in Minecraft yourself.</p>
+
+        <div class="connection-grid">
+          <div class="slot-field bevel-inset">
+            <span class="slot-field__label">Server Address</span>
+            <span class="slot-field__value" id="addressValue">tissues-shorty.tun.ply.gg</span>
+            <button class="btn-copy" data-copy="tissues-shorty.tun.ply.gg" data-feedback="addrCopyFeedback">Copy</button>
+            <span class="copy-feedback" id="addrCopyFeedback" aria-live="polite"></span>
+          </div>
+          <div class="slot-field bevel-inset">
+            <span class="slot-field__label">Port</span>
+            <span class="slot-field__value" id="portValue">34816</span>
+            <button class="btn-copy" data-copy="34816" data-feedback="portCopyFeedback">Copy</button>
+            <span class="copy-feedback" id="portCopyFeedback" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <ol class="manual-steps">
+          <li>Open Minecraft and go to <strong>Play</strong>.</li>
+          <li>Select the <strong>Servers</strong> tab, then <strong>Add Server</strong>.</li>
+          <li>Paste the address and port above, then save.</li>
+          <li>Tap the server in your list and hit <strong>Join</strong>.</li>
+        </ol>
+
+        <div class="manual-actions">
+          <button class="btn-secondary" data-action="add-server">Add To Server List Instead</button>
+        </div>
+
+        <p class="section__foot"><a href="https://www.minecraft.net" target="_blank" rel="noopener">Don't have Minecraft: Bedrock Edition yet?</a></p>
+      </div>
+    </section>
+
+    <section class="section" id="about">
+      <div class="shell">
+        <h2>On the Server</h2>
+        <div class="hotbar">
+          <div class="hotbar__slot bevel-raised">
+            <h3>Pure Survival</h3>
+            <p>No shortcuts. Punch trees, mine stone, and build up from nothing.</p>
+          </div>
+          <div class="hotbar__slot bevel-raised">
+            <h3>Bedrock Cross-Play</h3>
+            <p>Join from console, mobile, or PC — Bedrock plays nice with everyone.</p>
+          </div>
+          <div class="hotbar__slot bevel-raised">
+            <h3>Community Built</h3>
+            <p>A small, friendly world for people who actually want to play together.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="shell site-footer__inner">
+      <p class="site-footer__address">tissues-shorty.tun.ply.gg:34816</p>
+      <p class="site-footer__legal">Minecraft: Bedrock Edition is required to join. This is an unofficial, fan-run server — not affiliated with Mojang Studios or Microsoft. Minecraft is a trademark of Mojang Synergies AB.</p>
+    </div>
+  </footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var SERVER_HOST = 'tissues-shorty.tun.ply.gg';
+  var SERVER_PORT = '34816';
+  var SERVER_LABEL = 'BooServer';
+  var FULL_ADDRESS = SERVER_HOST + ':' + SERVER_PORT;
+
+  function connectLink() {
+    return 'minecraft://connect?serverUrl=' + encodeURIComponent(SERVER_HOST) + '&serverPort=' + encodeURIComponent(SERVER_PORT);
+  }
+
+  function addServerLink() {
+    return 'minecraft://?addExternalServer=' + SERVER_LABEL + '|' + FULL_ADDRESS;
+  }
+
+  function attemptOpen(link, onFail) {
+    var left = false;
+    function markLeft() { left = true; }
+    window.addEventListener('blur', markLeft);
+    document.addEventListener('visibilitychange', markLeft);
+    window.location.href = link;
+    window.setTimeout(function () {
+      window.removeEventListener('blur', markLeft);
+      document.removeEventListener('visibilitychange', markLeft);
+      if (!left && typeof onFail === 'function') onFail();
+    }, 1800);
+  }
+
+  function showJoinFallback() {
+    var el = document.getElementById('joinFallback');
+    if (el) el.classList.add('is-visible');
+  }
+
+  function copyText(text, feedbackId) {
+    function done(ok) {
+      var fb = document.getElementById(feedbackId);
+      if (!fb) return;
+      fb.textContent = ok ? 'Copied!' : 'Copy failed — select manually';
+      fb.classList.add('is-visible');
+      window.setTimeout(function () { fb.classList.remove('is-visible'); }, 2000);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
+    } else {
+      done(false);
+    }
+  }
+
+  function loadStatus() {
+    var dot = document.getElementById('statusDot');
+    var text = document.getElementById('statusText');
+    if (!dot || !text) return;
+    fetch('https://api.mcsrvstat.us/bedrock/3/' + FULL_ADDRESS)
+      .then(function (res) {
+        if (!res.ok) throw new Error('bad-response');
+        return res.json();
+      })
+      .then(function (data) {
+        if (data && data.online) {
+          dot.classList.add('is-online');
+          var online = data.players && typeof data.players.online === 'number' ? data.players.online : null;
+          var max = data.players && typeof data.players.max === 'number' ? data.players.max : null;
+          text.textContent = (online !== null && max !== null) ? (online + ' / ' + max + ' players online') : 'Online now';
+        } else {
+          dot.classList.add('is-offline');
+          text.textContent = 'Offline right now';
+        }
+      })
+      .catch(function () {
+        text.textContent = 'Status unavailable — jump in and see for yourself';
+      });
+  }
+
+  document.addEventListener('click', function (event) {
+    var joinBtn = event.target.closest('[data-action="join"]');
+    if (joinBtn) {
+      attemptOpen(connectLink(), showJoinFallback);
+      return;
+    }
+    var addBtn = event.target.closest('[data-action="add-server"]');
+    if (addBtn) {
+      attemptOpen(addServerLink());
+      return;
+    }
+    var copyBtn = event.target.closest('[data-copy]');
+    if (copyBtn) {
+      copyText(copyBtn.getAttribute('data-copy'), copyBtn.getAttribute('data-feedback'));
+      return;
+    }
+  });
+
+  loadStatus();
+})();
+</script>
+</body>
+</html>
